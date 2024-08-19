@@ -11,11 +11,11 @@ export default async ({ req, res, log, error }) => {
 
 	const db = new Databases(client);
 
-	if (req.method == "GET") {
-		const response = await db.listDocuments(DB_ID, COLLECTION_ID);
+	// if (req.method == "GET") {
+	const response = await db.listDocuments(DB_ID, COLLECTION_ID);
 
-		return res.json(response.documents);
-	}
+	return res.json(response.documents);
+	// }
 
-	return res.send("Hello");
+	// return res.send("Hello");
 };
