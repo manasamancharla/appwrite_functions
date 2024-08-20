@@ -12,6 +12,8 @@ import Mailgun from "mailgun-js";
 const PROJECT_ID = process.env.PROJECT_ID;
 const DB_ID = process.env.DB_ID;
 const COLLECTION_ID = process.env.COLLECTION_ID;
+const MAILGUN_API_KEY = process.env.MAILGUN_API_KEY;
+const MAILGUN_DOMAIN = process.env.MAILGUN_DOMAIN;
 
 export default async ({ req, res, log, error }) => {
 	log("Received request method:", req.method);
@@ -41,40 +43,36 @@ export default async ({ req, res, log, error }) => {
 		const { email, name, phone } = JSON.parse(req.payload);
 		log("Parsed payload:", { email, name, phone });
 
-		const userId = headers["x-appwrite-user-id"];
+		const mg = Mailgun({ apiKey: MAILGUN_API_KEY, domain: MAILGUN_DOMAIN });
 
-		const result = await users.createTarget(
-			ID.unique(), // userId
-			ID.unique(), // targetId
-			MessagingProviderType.Email, // providerType
-			"email" // identifier
-			// "<PROVIDER_ID>", // providerId (optional)
-			// "<NAME>" // name (optional)
-		);
+		const data = {
+			from: "Your Company <no-reply@yourdomain.com>",
+			to: email,
+			subject: `Welcome ${name}`,
+			text: "Thank you for signing up!",
+		};
 
-		const message = await messaging.createEmail(
-			ID.unique(), // messageId
-			`Welcome ${name}`, // subject
-			"Thank you for signing up!", // content
-			[], // topics (optional)
-			[], // users (optional)
-			[result], // targets (optional)
-			[email], // cc (optional)
-			[], // bcc (optional)
-			false, // draft (optional)
-			false, // html (optional)
-			"" // scheduledAt (optional)
-		);
-
-		return res.json({
-			status: "success",
-			message: "Email sent successfully via SendGrid",
+		mg.messages().send(data, (error, body) => {
+			if (error) {
+				log("Error sending email:", error);
+				return res.json({
+					status: "error",
+					message: "Error sending email via Mailgun",
+					error: error.message,
+				});
+			} else {
+				log("Email sent:", body);
+				return res.json({
+					status: "success",
+					message: "Email sent successfully via Mailgun",
+				});
+			}
 		});
 	} catch (err) {
-		log("Error sending email:", err);
+		log("Error processing request:", err);
 		return res.json({
 			status: "error",
-			message: "Error sending email via SendGrid",
+			message: "Error processing request",
 			error: err.message,
 		});
 	}
