@@ -4,9 +4,10 @@ import {
 	Users,
 	MessagingProviderType,
 	ID,
+	Messaging,
 } from "node-appwrite";
 
-import sgMail from "@sendgrid/mail";
+import Mailgun from "mailgun-js";
 
 const PROJECT_ID = process.env.PROJECT_ID;
 const DB_ID = process.env.DB_ID;
@@ -17,7 +18,16 @@ export default async ({ req, res, log, error }) => {
 
 	const client = new Client();
 
-	client.setEndpoint("https://cloud.appwrite.io/v1").setProject(PROJECT_ID);
+	client
+		.setEndpoint("https://cloud.appwrite.io/v1")
+		.setProject(PROJECT_ID)
+		.setKey(process.env.SECRET_KEY);
+
+	const users = new Users(client);
+
+	const messaging = new Messaging(client);
+
+	const headers = req.headers;
 
 	if (req.method !== "POST") {
 		log("Invalid request method:", req.method);
@@ -31,19 +41,30 @@ export default async ({ req, res, log, error }) => {
 		const { email, name, phone } = JSON.parse(req.payload);
 		log("Parsed payload:", { email, name, phone });
 
-		sgMail.setApiKey(process.env.SENDGRID_KEY);
-		log("SendGrid API key set.");
+		const userId = headers["x-appwrite-user-id"];
 
-		const msg = {
-			to: email,
-			from: "amancharlamanas@gmail.com",
-			subject: `Welcome ${name}`,
-			text: `Welcome ${name}`,
-			html: `<p>Welcome ${name}</p>`,
-		};
+		const result = await users.createTarget(
+			ID.unique(), // userId
+			ID.unique(), // targetId
+			MessagingProviderType.Email, // providerType
+			"email" // identifier
+			// "<PROVIDER_ID>", // providerId (optional)
+			// "<NAME>" // name (optional)
+		);
 
-		await sgMail.send(msg);
-		log("Email sent successfully.");
+		const message = await messaging.createEmail(
+			ID.unique(), // messageId
+			`Welcome ${name}`, // subject
+			"Thank you for signing up!", // content
+			[], // topics (optional)
+			[], // users (optional)
+			[result], // targets (optional)
+			[email], // cc (optional)
+			[], // bcc (optional)
+			false, // draft (optional)
+			false, // html (optional)
+			"" // scheduledAt (optional)
+		);
 
 		return res.json({
 			status: "success",
@@ -57,30 +78,4 @@ export default async ({ req, res, log, error }) => {
 			error: err.message,
 		});
 	}
-
-	// const { email, name, phone } = JSON.parse(req.payload);
-
-	// const db = new Databases(client);
-
-	// if (req.method == "POST") {
-	// 	sgMail.setApiKey(process.env.SENDGRID_KEY);
-
-	// 	const msg = {
-	// 		to: email,
-	// 		from: "amancharlamanas@gmail.com",
-	// 		subject: `Welcome ${name}`,
-	// 		text: `Welcome ${name}`,
-	// 		html: `<p>Welcome ${name}}</p>`,
-	// 	};
-
-	// 	try {
-	// 		await sgMail.send(msg);
-	// 		res.json({ status: "Email sent successfully via SendGrid" });
-	// 	} catch (err) {
-	// 		console.error("SendGrid error:", err);
-	// 		res.json({ status: "Error sending email via SendGrid", error: err });
-	// 	}
-	// }
-
-	// return res.send(`Expected POST, received ${req.method}`);
 };
