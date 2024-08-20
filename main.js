@@ -16,7 +16,7 @@ const MAILGUN_API_KEY = process.env.MAILGUN_API_KEY;
 const MAILGUN_DOMAIN = process.env.MAILGUN_DOMAIN;
 
 export default async ({ req, res, log, error }) => {
-	context.log("Received request method:", req.method);
+	log("Received request method:", req.method);
 
 	const client = new Client();
 
