@@ -13,17 +13,34 @@ const DB_ID = process.env.DB_ID;
 const COLLECTION_ID = process.env.COLLECTION_ID;
 
 export default async ({ req, res, log, error }) => {
+	const { email, name, phone } = JSON.parse(req.payload);
 	const client = new Client();
 
 	client.setEndpoint("https://cloud.appwrite.io/v1").setProject(PROJECT_ID);
 
 	const db = new Databases(client);
 
-	if (req.method == "GET") {
-		const response = await db.listDocuments(DB_ID, COLLECTION_ID);
+	if (req.method == "POST") {
+		sgMail.setApiKey(process.env.SENDGRID_KEY);
 
-		return res.json(response.documents);
+		const msg = {
+			to: email,
+			from: "amancharlamanas@gmail.com",
+			subject: `Welcome ${name}`,
+			text: `Welcome ${name}`,
+			html: `<p>Welcome ${name}}</p>`,
+		};
+
+		try {
+			await sgMail.send(msg);
+			res.json({ status: "Email sent successfully via SendGrid" });
+		} catch (err) {
+			console.error("SendGrid error:", err);
+			res.json({ status: "Error sending email via SendGrid", error: err });
+		}
+
+		return res.json({ message: "Done" });
 	}
 
-	return res.send("Hello");
+	return res.send(`Expected POST, received ${req.method}`);
 };
