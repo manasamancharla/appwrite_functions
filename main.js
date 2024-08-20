@@ -13,7 +13,7 @@ const DB_ID = process.env.DB_ID;
 const COLLECTION_ID = process.env.COLLECTION_ID;
 
 export default async ({ req, res, log, error }) => {
-	if (req.method === "POST") {
+	if (req.method == "POST") {
 		const { email, name, phone } = JSON.parse(req.payload);
 		const client = new Client();
 
