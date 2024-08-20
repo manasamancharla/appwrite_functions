@@ -59,10 +59,12 @@ export default async ({ req, res, log, error }) => {
 			res.json({ status: "Error sending email via SendGrid", error: err });
 		}
 	} else {
-		res.json({
-			status: "Invalid request method",
-			error: `Expected POST, received ${req.method}`,
-		});
+		// res.json({
+		// 	status: "Invalid request method",
+		// 	error: `Expected POST, received ${req.method}`,
+		// });
+
+		res.send(`Expected POST, received ${req.method}`);
 	}
 
 	// return res.send("Hello");
